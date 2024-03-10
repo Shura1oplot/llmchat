@@ -496,9 +496,9 @@ class AsyncAnthropicChat(AsyncChatBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        kw = {"api_key": self.api_key}
-
-        self.client = anthropic.AsyncAnthropic(**kw)
+        self.client = anthropic.AsyncAnthropic(
+            api_key=self.api_key,
+            timeout=120.0)  # 2 minutes, default - 10 minutes
 
         self.messages = []
 
