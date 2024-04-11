@@ -348,7 +348,8 @@ class AsyncGoogleAIChat(AsyncChatBase):
 
     _api_key_env_var = "GOOGLEAI_API_KEY"
 
-    _model = "gemini-1.5-pro-latest"
+    # _model = "gemini-1.5-pro-latest"  # limit of 2 requests per second
+    _model = "gemini-1.0-pro"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -629,7 +630,7 @@ class AsyncCohereChat(ChatBase):
 
         self.client = cohere.AsyncClient(
             api_key=self.api_key,
-            timeout=120.0)  # 2 minutes, default - 10 minutes
+            timeout=60)
 
         self.messages = []
 
@@ -660,10 +661,11 @@ class AsyncCohereChat(ChatBase):
                 if tries == 0:
                     raise
 
-                time.sleep(1)
+                await asyncio.sleep(1)
 
             else:
                 exception = None
+                break
 
         if exception:
             logging.error("%s: response=%s", self.__class__.__name__,
@@ -672,9 +674,9 @@ class AsyncCohereChat(ChatBase):
 
         model_message = response.text
         self.messages.append({"role": "USER",
-                              "content": prompt})
+                              "message": prompt})
         self.messages.append({"role": "CHATBOT",
-                              "content": model_message})
+                              "message": model_message})
         return self._process_output(model_message)
 
 
@@ -690,9 +692,12 @@ class CohereChat(ChatBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # self.client = cohere.Client(
+        #     api_key=self.api_key,
+        #     timeout=60)
         self.client = cohere.Client(
             api_key=self.api_key,
-            timeout=120.0)  # 2 minutes, default - 10 minutes
+            timeout=60)
 
         self.messages = []
 
@@ -727,6 +732,7 @@ class CohereChat(ChatBase):
 
             else:
                 exception = None
+                break
 
         if exception:
             logging.error("%s: response=%s", self.__class__.__name__,
@@ -735,9 +741,9 @@ class CohereChat(ChatBase):
 
         model_message = response.text
         self.messages.append({"role": "USER",
-                              "content": prompt})
+                              "message": prompt})
         self.messages.append({"role": "CHATBOT",
-                              "content": model_message})
+                              "message": model_message})
         return self._process_output(model_message)
 
 
