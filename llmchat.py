@@ -646,6 +646,7 @@ class AsyncCohereChat(ChatBase):
             try:
                 response = await self.client.chat(
                     model=self._model,
+                    message=prompt,
                     chat_history=self.messages,
                     temperature=self.temperature,
                     **kw)
@@ -708,6 +709,7 @@ class CohereChat(ChatBase):
             try:
                 response = self.client.chat(
                     model=self._model,
+                    message=prompt,
                     chat_history=self.messages,
                     temperature=self.temperature,
                     **kw)
