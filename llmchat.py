@@ -24,13 +24,16 @@ def extract_tripple_quotes(s):
     return s
 
 
-def extract_answer_tag(s):
-    m = re.search(r"<answer>(.*)</answer>", s, flags=re.DOTALL)
+def extract_tag(s, tag="answer", default=None):
+    m = re.search(rf"<{tag}>(.*)</{tag}>", s, flags=re.DOTALL)
 
     if not m:
-        raise ValueError(s)
+        if default is None:
+            raise ValueError(s)
 
-    return m.group(1)
+        return default
+
+    return m.group(1).strip()
 
 
 class ChatError(Exception):
