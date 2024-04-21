@@ -10,6 +10,7 @@ import asyncio
 import httpx
 import openai
 import anthropic
+import cohere
 
 
 def extract_tripple_quotes(s):
@@ -192,7 +193,8 @@ class AsyncOpenAIChatBase(AsyncChatBase):
                     messages=messages,
                     temperature=self.temperature)
 
-            except openai.BadRequestError:  # FIXME: proper error handling
+            # FIXME: proper error handling
+            except openai.BadRequestError:
                 tries -= 1
 
                 if tries == 0:
@@ -252,7 +254,8 @@ class OpenAIChatBase(ChatBase):
                     messages=messages,
                     temperature=self.temperature)
 
-            except openai.BadRequestError:  # FIXME: proper error handling
+            # FIXME: proper error handling
+            except openai.BadRequestError:
                 tries -= 1
 
                 if tries == 0:
@@ -281,7 +284,7 @@ class AsyncOpenAIChat(AsyncOpenAIChatBase):
 
     _api_key_env_var = "OPENAI_API_KEY"
 
-    _model = "gpt-4-turbo-preview"
+    _model = "gpt-4-turbo"
 
 
 class OpenAIChat(OpenAIChatBase):
@@ -291,7 +294,7 @@ class OpenAIChat(OpenAIChatBase):
 
     _api_key_env_var = "OPENAI_API_KEY"
 
-    _model = "gpt-4-turbo-preview"
+    _model = "gpt-4-turbo"
 
 
 # class AsyncAnthropicChat(AsyncOpenAIChatBase):
@@ -345,6 +348,7 @@ class AsyncGoogleAIChat(AsyncChatBase):
 
     _api_key_env_var = "GOOGLEAI_API_KEY"
 
+    # _model = "gemini-1.5-pro-latest"  # limit of 2 requests per second
     _model = "gemini-1.0-pro"
 
     def __init__(self, *args, **kwargs):
@@ -612,6 +616,137 @@ class AnthropicChat(ChatBase):
         return self._process_output(model_message)
 
 
+class AsyncCohereChat(ChatBase):
+
+    models = ("command-r-plus", )
+    provider = "cohere"
+
+    _api_key_env_var = "COHERE_API_KEY"
+
+    _model = "command-r-plus"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.client = cohere.AsyncClient(
+            api_key=self.api_key,
+            timeout=60)
+
+        self.messages = []
+
+    async def _send(self, prompt):
+        tries = 5
+        exception = None
+
+        while True:
+            kw = {}
+
+            if self.system:
+                kw["preamble"] = self.system
+
+            try:
+                response = await self.client.chat(
+                    model=self._model,
+                    message=prompt,
+                    chat_history=self.messages,
+                    temperature=self.temperature,
+                    **kw)
+
+            # FIXME: proper error handling
+            except cohere.core.api_error.ApiError as e:
+                exception = e
+
+                tries -= 1
+
+                if tries == 0:
+                    raise
+
+                await asyncio.sleep(1)
+
+            else:
+                exception = None
+                break
+
+        if exception:
+            logging.error("%s: response=%s", self.__class__.__name__,
+                          exception.body)
+            raise ChatError(exception.body["message"])
+
+        model_message = response.text
+        self.messages.append({"role": "USER",
+                              "message": prompt})
+        self.messages.append({"role": "CHATBOT",
+                              "message": model_message})
+        return self._process_output(model_message)
+
+
+class CohereChat(ChatBase):
+
+    models = ("command-r-plus", )
+    provider = "cohere"
+
+    _api_key_env_var = "COHERE_API_KEY"
+
+    _model = "command-r-plus"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # self.client = cohere.Client(
+        #     api_key=self.api_key,
+        #     timeout=60)
+        self.client = cohere.Client(
+            api_key=self.api_key,
+            timeout=60)
+
+        self.messages = []
+
+    def _send(self, prompt):
+        tries = 5
+        exception = None
+
+        while True:
+            kw = {}
+
+            if self.system:
+                kw["preamble"] = self.system
+
+            try:
+                response = self.client.chat(
+                    model=self._model,
+                    message=prompt,
+                    chat_history=self.messages,
+                    temperature=self.temperature,
+                    **kw)
+
+            # FIXME: proper error handling
+            except cohere.core.api_error.ApiError as e:
+                exception = e
+
+                tries -= 1
+
+                if tries == 0:
+                    raise
+
+                time.sleep(1)
+
+            else:
+                exception = None
+                break
+
+        if exception:
+            logging.error("%s: response=%s", self.__class__.__name__,
+                          exception.body)
+            raise ChatError(exception.body["message"])
+
+        model_message = response.text
+        self.messages.append({"role": "USER",
+                              "message": prompt})
+        self.messages.append({"role": "CHATBOT",
+                              "message": model_message})
+        return self._process_output(model_message)
+
+
 def chat_factory(model=None,
                  async_=False,
                  api_keys=None,
@@ -619,11 +754,13 @@ def chat_factory(model=None,
     chat_classes_async = (AsyncOpenAIChat,
                           AsyncAnthropicChat,
                           AsyncMistralAIChat,
-                          AsyncGoogleAIChat)
+                          AsyncGoogleAIChat,
+                          AsyncCohereChat)
     chat_classes_sync = (OpenAIChat,
                          AnthropicChat,
                          MistralAIChat,
-                         GoogleAIChat)
+                         GoogleAIChat,
+                         CohereChat)
 
     if async_:
         chat_classes = chat_classes_async
