@@ -24,11 +24,14 @@ def extract_tripple_quotes(s):
     return s
 
 
-def extract_tag(s, tag="answer", default=None):
+_undefined = object()
+
+
+def extract_tag(s, tag="answer", default=_undefined):
     m = re.search(rf"<{tag}>(.*)</{tag}>", s, flags=re.DOTALL)
 
     if not m:
-        if default is None:
+        if default is _undefined:
             raise ValueError(s)
 
         return default
