@@ -5,6 +5,7 @@ import time
 import datetime
 import json
 import logging
+import copy
 import asyncio
 
 import httpx
@@ -82,6 +83,8 @@ class AsyncChatBase:
             datetime.datetime.today().strftime("%Y%m%d%H%M%S"),
             str(uuid.uuid4())[:6])
 
+        self.messages = None
+
     async def send(self, prompt):
         response = await self._send(prompt)
 
@@ -100,6 +103,15 @@ class AsyncChatBase:
 
     def _process_output(self, s):
         return s.strip()
+
+    def copy(self):
+        new_chat = self.__class__(
+            api_key=self.api_key,
+            system=self.system,
+            temperature=self.temperature,
+            log_dir=self.log_dir)
+        new_chat.messages = copy.deepcopy(self.messages)
+        return new_chat
 
 
 class ChatBase:
@@ -141,6 +153,8 @@ class ChatBase:
             datetime.datetime.today().strftime("%Y%m%d%H%M%S"),
             str(uuid.uuid4())[:6])
 
+        self.messages = None
+
     def send(self, prompt):
         response = self._send(prompt)
 
@@ -159,6 +173,15 @@ class ChatBase:
 
     def _process_output(self, s):
         return s.strip()
+
+    def copy(self):
+        new_chat = self.__class__(
+            api_key=self.api_key,
+            system=self.system,
+            temperature=self.temperature,
+            log_dir=self.log_dir)
+        new_chat.messages = copy.deepcopy(self.messages)
+        return new_chat
 
 
 class AsyncOpenAIChatBase(AsyncChatBase):
@@ -698,9 +721,6 @@ class CohereChat(ChatBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # self.client = cohere.Client(
-        #     api_key=self.api_key,
-        #     timeout=60)
         self.client = cohere.Client(
             api_key=self.api_key,
             timeout=60)
