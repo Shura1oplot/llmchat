@@ -2,3 +2,4 @@ httpx
 openai
 anthropic
 cohere
+reka-api

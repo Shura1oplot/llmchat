@@ -12,6 +12,7 @@ import httpx
 import openai
 import anthropic
 import cohere
+import reka
 
 
 def extract_tripple_quotes(s):
@@ -773,6 +774,95 @@ class CohereChat(ChatBase):
         return self._process_output(model_message)
 
 
+class AsyncRekaChat(ChatBase):
+
+    models = ("reka-core", )
+    provider = "reka"
+
+    _api_key_env_var = "REKA_API_KEY"
+
+    _model = "reka-core"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        reka.API_KEY = self.api_key
+
+        # FIXME: timeout
+
+        self.messages = []
+
+        if self.system:
+            self.messages.append({"type": "human", "text": self.system})
+            self.messages.append({"type": "model", "text": "OK"})
+
+    async def _send(self, prompt):
+        raise NotImplementedError()
+
+
+class RekaChat(ChatBase):
+
+    models = ("reka-core", )
+    provider = "reka"
+
+    _api_key_env_var = "REKA_API_KEY"
+
+    _model = "reka-core"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        reka.API_KEY = self.api_key
+
+        # FIXME: timeout
+
+        self.messages = []
+
+        if self.system:
+            self.messages.append({"type": "human", "text": self.system})
+            self.messages.append({"type": "model", "text": "OK"})
+
+    def _send(self, prompt):
+        tries = 5
+        exception = None
+
+        while True:
+            try:
+                response = reka.chat(
+                    model_name=self._model,
+                    human=prompt,
+                    conversation_history=self.messages,
+                    temperature=self.temperature)
+
+            # FIXME: proper error handling
+            except reka.errors.RekaError as e:
+                exception = e
+
+                tries -= 1
+
+                if tries == 0:
+                    raise
+
+                time.sleep(1)
+
+            else:
+                exception = None
+                break
+
+        if exception:
+            logging.error("%s: response=%s",
+                          self.__class__.__name__,
+                          exception.reason)
+            raise ChatError(repr(exception))
+
+        model_message = response.text
+        self.messages.append({"role": "human",
+                              "text": prompt})
+        self.messages.append({"role": "model",
+                              "text": model_message})
+        return self._process_output(model_message)
+
+
 def chat_factory(model=None,
                  async_=False,
                  api_keys=None,
@@ -786,7 +876,8 @@ def chat_factory(model=None,
                          AnthropicChat,
                          MistralAIChat,
                          GoogleAIChat,
-                         CohereChat)
+                         CohereChat,
+                         RekaChat)
 
     if async_:
         chat_classes = chat_classes_async
