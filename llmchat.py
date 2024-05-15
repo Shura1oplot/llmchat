@@ -786,10 +786,6 @@ class AsyncRekaChat(ChatBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        reka.API_KEY = self.api_key
-
-        # FIXME: timeout
-
         self.messages = []
 
         if self.system:
@@ -797,7 +793,52 @@ class AsyncRekaChat(ChatBase):
             self.messages.append({"type": "model", "text": "OK"})
 
     async def _send(self, prompt):
-        raise NotImplementedError()
+        url = "https://api.reka.ai/chat"
+
+        messages = self.messages[:]
+        messages.append({"type": "human",
+                         "text": prompt})
+
+        payload = {
+            "conversation_history": messages,
+            "model_name": self._model,
+            "temperature": self.temperature,
+            "generationConfig": {
+                "temperature": self.temperature,
+                "maxOutputTokens": 2048,
+            }
+        }
+
+        headers = {"Content-Type": "application/json",
+                   "X-Api-Key": self.api_key}
+
+        tries = 5
+
+        async with httpx.AsyncClient() as client:
+            while True:
+                try:
+                    response = await client.post(
+                        url=url,
+                        headers=headers,
+                        data=json.dumps(payload),
+                        timeout=60)
+                    response.raise_for_status()
+
+                except httpx.HTTPError:  # FIXME: proper error handling
+                    tries -= 1
+
+                    if tries == 0:
+                        raise
+
+                    await asyncio.sleep(1)
+
+                else:
+                    break
+
+        model_msg = response.json()["text"]
+        self.contents.append({"type": "human", "text": prompt})
+        self.contents.append({"type": "model", "text": model_msg})
+        return self._process_output(model_msg)
 
 
 class RekaChat(ChatBase):
