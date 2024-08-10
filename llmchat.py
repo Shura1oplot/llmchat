@@ -309,22 +309,22 @@ class OpenAIChatBase(ChatBase):
 
 class AsyncOpenAIChat(AsyncOpenAIChatBase):
 
-    models = ("chatgpt", "gpt-4", "gpt-4-turbo")
+    models = ("chatgpt", "gpt-4", "gpt-4-turbo", "gpt-4o")
     provider = "openai"
 
     _api_key_env_var = "OPENAI_API_KEY"
 
-    _model = "gpt-4-turbo"
+    _model = "gpt-4o-2024-08-06"
 
 
 class OpenAIChat(OpenAIChatBase):
 
-    models = ("chatgpt", "gpt-4", "gpt-4-turbo")
+    models = ("chatgpt", "gpt-4", "gpt-4-turbo", "gpt-4o")
     provider = "openai"
 
     _api_key_env_var = "OPENAI_API_KEY"
 
-    _model = "gpt-4-turbo"
+    _model = "gpt-4o-2024-08-06"
 
 
 # class AsyncAnthropicChat(AsyncOpenAIChatBase):
@@ -373,13 +373,12 @@ class MistralAIChat(OpenAIChatBase):
 
 class AsyncGoogleAIChat(AsyncChatBase):
 
-    models = ("gemini-pro", )
+    models = ("gemini-pro", "gemini-1.5-pro")
     provider = "googleai"
 
     _api_key_env_var = "GOOGLEAI_API_KEY"
 
-    # _model = "gemini-1.5-pro-latest"  # limit of 2 requests per second
-    _model = "gemini-1.0-pro"
+    _model = "gemini-1.5-pro"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -447,12 +446,12 @@ class AsyncGoogleAIChat(AsyncChatBase):
 
 class GoogleAIChat(ChatBase):
 
-    models = ("gemini-pro", )
+    models = ("gemini-pro", "gemini-1.5-pro")
     provider = "googleai"
 
     _api_key_env_var = "GOOGLEAI_API_KEY"
 
-    _model = "gemini-1.0-pro"
+    _model = "gemini-1.5-pro"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -520,12 +519,13 @@ class GoogleAIChat(ChatBase):
 
 class AsyncAnthropicChat(AsyncChatBase):
 
-    models = ("claude", "claude-3", "claude-3-opus")
+    models = ("claude", "claude-3", "claude-3-opus", "claude-3.5",
+              "claude-3.5-sonnet")
     provider = "anthropic"
 
     _api_key_env_var = "ANTHROPIC_API_KEY"
 
-    _model = "claude-3-opus-20240229"
+    _model = "claude-3-5-sonnet-20240620"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
