@@ -378,7 +378,7 @@ class AsyncGoogleAIChat(AsyncChatBase):
 
     _api_key_env_var = "GOOGLEAI_API_KEY"
 
-    _model = "gemini-1.5-pro"
+    _model = "gemini-1.5-pro-latest"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -451,7 +451,7 @@ class GoogleAIChat(ChatBase):
 
     _api_key_env_var = "GOOGLEAI_API_KEY"
 
-    _model = "gemini-1.5-pro"
+    _model = "gemini-1.5-pro-latest"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
