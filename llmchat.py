@@ -458,7 +458,7 @@ class GoogleAIChat(ChatBase):
 
         self.contents = []
 
-        if self.system:
+        if self.system:  # FIXME https://ai.google.dev/gemini-api/docs/system-instructions?lang=rest
             system = self.system
             system += "\n\nAnswer OK if you understand."
             self.contents.append({"role": "user",
